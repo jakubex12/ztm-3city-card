@@ -1,0 +1,90 @@
+name: 🚀 Promote DEV to TEST
+
+on:
+  workflow_dispatch: # Uruchamianie ręczne przyciskiem w GitHub
+
+permissions:
+  contents: write # Wymagane, żeby bot mógł robić git push
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Pobieramy całą historię, żeby widzieć wszystkie gałęzie
+
+      - name: ⚙️ Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🧮 Calculate Versions
+        id: versions
+        run: |
+          # 1. Pobierz obecną wersję z manifest.json (lub hacs.json dla karty)
+          # Zakładamy, że plik jest w custom_components/ztm_trojmiasto/manifest.json lub w root (dostosuj ścieżkę!)
+          
+          if [ -f "custom_components/ztm_trojmiasto/manifest.json" ]; then
+            FILE_PATH="custom_components/ztm_trojmiasto/manifest.json"
+          elif [ -f "hacs.json" ]; then
+            FILE_PATH="hacs.json"
+          else
+            echo "❌ Nie znaleziono pliku wersji!" && exit 1
+          fi
+          
+          echo "FILE_PATH=$FILE_PATH" >> $GITHUB_ENV
+          
+          # Wyciągamy wersję np. "2026.1.2-beta3"
+          CURRENT_VER=$(grep -oP '"(version|homeassistant)": "\K[^"]+' $FILE_PATH | head -1)
+          echo "Current Version: $CURRENT_VER"
+
+          # Usuwamy wszystko po myślniku, mamy czyste "2026.1.2"
+          BASE_VER=$(echo $CURRENT_VER | cut -d'-' -f1)
+          
+          # --- WERSJA RC (dla TEST) ---
+          # 2026.1.2-rc1
+          RC_VER="${BASE_VER}-rc1"
+          
+          # --- WERSJA NEXT DEV (dla DEV) ---
+          # Rozbijamy na części: 2026, 1, 2
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VER"
+          # Podbijamy PATCH o 1 -> 3
+          NEXT_PATCH=$((PATCH + 1))
+          # Składamy: 2026.1.3-beta1
+          NEXT_DEV_VER="${MAJOR}.${MINOR}.${NEXT_PATCH}-beta1"
+
+          echo "✅ Plan: RC=$RC_VER, Next DEV=$NEXT_DEV_VER"
+          
+          echo "RC_VER=$RC_VER" >> $GITHUB_ENV
+          echo "NEXT_DEV_VER=$NEXT_DEV_VER" >> $GITHUB_ENV
+
+      - name: 🔀 Merge DEV into TEST & Apply RC
+        run: |
+          git checkout TEST || git checkout -b TEST origin/TEST
+          git pull origin TEST
+          
+          # Merge zmian z DEV
+          git merge origin/DEV --no-edit
+          
+          # Podmiana wersji w pliku (używamy zmiennej z poprzedniego kroku)
+          sed -i 's/"\(version\|homeassistant\)": ".*"/"\1": "'"${{ env.RC_VER }}"'"/' ${{ env.FILE_PATH }}
+          
+          # Commit i Push
+          git add ${{ env.FILE_PATH }}
+          git commit -m "🚀 Release Candidate: ${{ env.RC_VER }}"
+          git push origin TEST
+
+      - name: 🚧 Update DEV with Next Beta
+        run: |
+          git checkout DEV
+          git pull origin DEV
+          
+          # Podmiana wersji na nową betę
+          sed -i 's/"\(version\|homeassistant\)": ".*"/"\1": "'"${{ env.NEXT_DEV_VER }}"'"/' ${{ env.FILE_PATH }}
+          
+          # Commit i Push
+          git add ${{ env.FILE_PATH }}
+          git commit -m "🚧 Start Next Iteration: ${{ env.NEXT_DEV_VER }}"
+          git push origin DEV
