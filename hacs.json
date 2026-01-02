@@ -1,5 +1,6 @@
 {
   "name": "ZTM 3City Departures Card",
   "render_readme": true,
-  "filename": "ztm-departures-card.js"
+  "filename": "ztm-departures-card.js",
+  "version": "1.0.2"
 }
