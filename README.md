@@ -1,10 +1,25 @@
 # ZTM 3City Departures Card
-Niestandardowa karta dla Home Assistant wyświetlająca odjazdy ZTM Gdańsk, Gdynia i Sopot.
 
-## Instalacja
-1. Dodaj to repozytorium do HACS jako "Custom Repository" (typ: Dashboard).
-2. Zainstaluj kartę.
-3. Odśwież interfejs Lovelace.
+Niestandardowa karta Lovelace dla Home Assistant, zaprojektowana do wyświetlania odjazdów ZTM Gdańsk, Gdynia i Sopot w czytelnej formie tablicy przystankowej.
 
-## Konfiguracja
-Użyj typu `custom:ztm-departures-card` i podaj encję sensora z integracji ZTM 3City.
+## 📋 Wymagania
+Karta wymaga zainstalowanej integracji backendowej:
+👉 [ZTM 3City Integration](https://github.com/jakubex12/ztm-3city)
+
+## 🚀 Instalacja
+### Przez HACS
+1. Otwórz **HACS** -> **Frontend**.
+2. Kliknij trzy kropki w prawym górnym rogu i wybierz **Niestandardowe repozytoria**.
+3. Wklej link: `https://github.com/jakubex12/ztm-3city-card`
+4. Wybierz kategorię **Dashboard**.
+5. Kliknij **Pobierz**.
+6. Po instalacji odśwież interfejs Home Assistant.
+
+## ⚙️ Konfiguracja
+Kartę możesz dodać przez edytor wizualny lub ręcznie w YAML:
+
+```yaml
+type: custom:ztm-departures-card
+entity: sensor.ztm_gdansk_skp_01
+name: Przystanek SKM
+show_num_departures: 5
