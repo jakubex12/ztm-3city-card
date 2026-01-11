@@ -21,6 +21,6 @@ Kartę możesz dodać przez edytor wizualny lub ręcznie w YAML:
 
 ```yaml
 type: custom:ztm-departures-card
-entity: sensor.ztm_gdansk_skp_01
-name: Przystanek SKM
+entity: sensor.autobusy_wolkowyska_01
+title: Odjazdy Wołkowyska [01]
 show_num_departures: 5
